@@ -34,10 +34,8 @@ class GuidancesController < ApplicationController
   def admin_create
     @guidance = Guidance.new(guidance_params)
     authorize @guidance
-    @guidance.text = params["guidance-text"]
 
     if @guidance.save
-
       if @guidance.published?
         guidance_group = GuidanceGroup.find(@guidance.guidance_group_id)
         if !guidance_group.published? || guidance_group.published.nil?
@@ -57,7 +55,6 @@ class GuidancesController < ApplicationController
   def admin_update
     @guidance = Guidance.find(params[:id])
     authorize @guidance
-    @guidance.text = params["guidance-text"]
 
     if @guidance.update_attributes(guidance_params)
       if @guidance.published?
@@ -132,10 +129,9 @@ class GuidancesController < ApplicationController
   end
 
   private
+
   def guidance_params
-    # The form on the page is weird. The text and template/section/question stuff is
-    # outside of the normal form params
-    params.require(:guidance).permit(:guidance_group_id, :published, theme_ids: [])
+    params.require(:guidance).permit(:guidance_group_id, :text, :published, theme_ids: [])
   end
 
 end
