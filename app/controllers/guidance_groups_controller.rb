@@ -14,7 +14,7 @@ class GuidanceGroupsController < ApplicationController
 
   # GET add new guidance groups
   def admin_new
-    @guidance_group = GuidanceGroup.new
+    @guidance_group = GuidanceGroup.new(org_id: current_user.org.id)
     authorize @guidance_group
   end
 
@@ -24,10 +24,6 @@ class GuidanceGroupsController < ApplicationController
   def admin_create
     @guidance_group = GuidanceGroup.new(guidance_group_params)
     authorize @guidance_group
-    @guidance_group.org_id = current_user.org_id
-    if params[:save_publish]
-      @guidance_group.published = true
-    end
 
     if @guidance_group.save
       flash.now[:notice] = success_message(@guidance_group, _("created"))
@@ -50,8 +46,6 @@ class GuidanceGroupsController < ApplicationController
   def admin_update
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
-    @guidance_group.org_id = current_user.org_id
-    @guidance_group.published = true unless params[:save_publish].nil?
 
     if @guidance_group.update(guidance_group_params)
       flash.now[:notice] = success_message(@guidance_group, _("saved"))
@@ -66,10 +60,8 @@ class GuidanceGroupsController < ApplicationController
   def admin_update_publish
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
-    @guidance_group.org.id = current_user.org.id
-    @guidance_group.published = true
 
-    if @guidance_group.save
+    if @guidance_group.update(published: true)
       # rubocop:disable Metrics/LineLength
       flash[:notice] = _("Your guidance group has been published and is now available to users.")
       # rubocop:enable Metrics/LineLength
@@ -83,10 +75,8 @@ class GuidanceGroupsController < ApplicationController
   def admin_update_unpublish
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
-    @guidance_group.org.id = current_user.org.id
-    @guidance_group.published = false
 
-    if @guidance_group.save
+    if @guidance_group.update(published: false)
       # rubocop:disable Metrics/LineLength
       flash[:notice] = _("Your guidance group is no longer published and will not be available to users.")
       # rubocop:enable Metrics/LineLength
@@ -112,8 +102,7 @@ class GuidanceGroupsController < ApplicationController
   private
 
   def guidance_group_params
-    params.require(:guidance_group)
-          .permit(:org_id, :name, :optional_subset, :published, :org, :guidances)
+    params.require(:guidance_group).permit(:org_id, :name, :published, :optional_subset)
   end
 
 end
