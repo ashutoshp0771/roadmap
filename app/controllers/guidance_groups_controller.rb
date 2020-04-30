@@ -5,22 +5,19 @@ class GuidanceGroupsController < ApplicationController
   after_action :verify_authorized
   respond_to :html
 
-  # GET /guidance_groups/1
-  def admin_show
-    @guidance_group = GuidanceGroup.find(params[:id])
-    authorize @guidance_group
-  end
+  # TODO: We should really update this to be RESTful and move it either
+  #       into the `org_admin` namespace or a new `admin` namespace.
+  #
+  #       Publish and Unpublish actions should be consolidated with :update
+  #       after conversion to RESTful actions
 
-
-  # GET add new guidance groups
+  # GET /org/admin/guidancegroup/:id/admin_new
   def admin_new
     @guidance_group = GuidanceGroup.new(org_id: current_user.org.id)
     authorize @guidance_group
   end
 
-
-  # POST /guidance_groups
-  # POST /guidance_groups.json
+  # POST /org/admin/guidancegroup/:id/admin_create
   def admin_create
     @guidance_group = GuidanceGroup.new(guidance_group_params)
     authorize @guidance_group
@@ -34,29 +31,26 @@ class GuidanceGroupsController < ApplicationController
     end
   end
 
-
-  # GET /guidance_groups/1/edit
+  # GET /org/admin/guidancegroup/:id/admin_edit
   def admin_edit
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
   end
 
-
-  # PUT /guidance_groups/1
+  # PUT /org/admin/guidancegroup/:id/admin_update
   def admin_update
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
 
     if @guidance_group.update(guidance_group_params)
       flash.now[:notice] = success_message(@guidance_group, _("saved"))
-      render :admin_edit
     else
       flash.now[:alert] = failure_message(@guidance_group, _("save"))
-      render :admin_edit
     end
+    render :admin_edit
   end
 
-  # PUT /guidance_groups/1
+  # PUT /org/admin/guidancegroup/:id/admin_update_publish
   def admin_update_publish
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
@@ -71,7 +65,7 @@ class GuidanceGroupsController < ApplicationController
     redirect_to admin_index_guidance_path
   end
 
-  # PUT /guidance_groups/1
+  # PUT /org/admin/guidancegroup/:id/admin_update_unpublish
   def admin_update_unpublish
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group
@@ -86,8 +80,7 @@ class GuidanceGroupsController < ApplicationController
     redirect_to admin_index_guidance_path
   end
 
-  # DELETE /guidance_groups/1
-  # DELETE /guidance_groups/1.json
+  # DELETE /org/admin/guidancegroup/:id/admin_destroy
   def admin_destroy
     @guidance_group = GuidanceGroup.find(params[:id])
     authorize @guidance_group

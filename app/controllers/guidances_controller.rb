@@ -5,8 +5,13 @@ class GuidancesController < ApplicationController
   after_action :verify_authorized
   respond_to :html
 
-  ##
-  # GET /guidances
+  # TODO: We should really update this to be RESTful and move it either
+  #       into the `org_admin` namespace or a new `admin` namespace.
+  #
+  #       Publish and Unpublish actions should be consolidated with :update
+  #       after conversion to RESTful actions
+
+  # GET /org/admin/guidance/:id/admin_index
   def admin_index
     authorize Guidance
     @guidances = Guidance.by_org(current_user.org)
@@ -14,14 +19,14 @@ class GuidancesController < ApplicationController
     @guidance_groups = GuidanceGroup.by_org(current_user.org).page(1)
   end
 
+  # GET /org/admin/guidance/:id/admin_new
   def admin_new
     @guidance = Guidance.new
     authorize @guidance
     render :new_edit
   end
 
-  ##
-  # GET /guidances/1/edit
+  # GET /org/admin/guidance/:id/admin_edit
   def admin_edit
     @guidance = Guidance.eager_load(:themes, :guidance_group)
                         .find(params[:id])
@@ -29,8 +34,7 @@ class GuidancesController < ApplicationController
     render :new_edit
   end
 
-  ##
-  # POST /guidances
+  # POST /org/admin/guidance/:id/admin_create
   def admin_create
     @guidance = Guidance.new(guidance_params)
     authorize @guidance
@@ -50,8 +54,7 @@ class GuidancesController < ApplicationController
     render :new_edit
   end
 
-  ##
-  # PUT /guidances/1
+  # PUT /org/admin/guidance/:id/admin_update
   def admin_update
     @guidance = Guidance.find(params[:id])
     authorize @guidance
@@ -71,8 +74,7 @@ class GuidancesController < ApplicationController
     render :new_edit
   end
 
-  ##
-  # DELETE /guidances/1
+  # DELETE /org/admin/guidance/:id/admin_destroy
   def admin_destroy
     @guidance = Guidance.find(params[:id])
     authorize @guidance
@@ -90,7 +92,7 @@ class GuidancesController < ApplicationController
     end
   end
 
-  # PUT /guidances/1
+  # PUT /org/admin/guidance/:id/admin_publish
   def admin_publish
     @guidance = Guidance.find(params[:id])
     authorize @guidance
@@ -109,7 +111,7 @@ class GuidancesController < ApplicationController
     redirect_to(action: :admin_index)
   end
 
-  # PUT /guidances/1
+  # PUT /org/admin/guidance/:id/admin_unpublish
   def admin_unpublish
     @guidance = Guidance.find(params[:id])
     authorize @guidance
