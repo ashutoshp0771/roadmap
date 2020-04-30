@@ -5,6 +5,8 @@ class AnswersController < ApplicationController
   respond_to :html
 
   # POST /answers/create_or_update
+  # TODO: Why!? This method is overly complex. Needs a refactor and we should break
+  #       apart into separate create/update actions
   def create_or_update
     p_params = permitted_params()
 
@@ -50,7 +52,7 @@ class AnswersController < ApplicationController
         end
         if q.question_format.rda_metadata?
           @answer.update_answer_hash(
-            JSON.parse(params[:standards]), p_params[:text]
+            JSON.parse(p_params[:standards]), p_params[:text]
           )
           @answer.save!
         end
@@ -60,7 +62,7 @@ class AnswersController < ApplicationController
         authorize @answer
         if q.question_format.rda_metadata?
           @answer.update_answer_hash(
-            JSON.parse(params[:standards]), p_params[:text]
+            JSON.parse(p_params[:standards]), p_params[:text]
           )
         end
         @answer.save!
@@ -74,6 +76,9 @@ class AnswersController < ApplicationController
     end
     # rubocop:enable Metrics/BlockLength
 
+    # TODO: Seems really strange to do this check. If its false it returns an
+    #      200 with an empty body. We should update to send back some JSON. The
+    #      check should probably happen on create/update
     if @answer.present?
       @plan = Plan.includes(
         sections: {
@@ -131,10 +136,11 @@ class AnswersController < ApplicationController
   end
 
   private
+
   def permitted_params
-    permitted = params.require(:answer).permit(:id, :text, :plan_id, :user_id,
-                                               :question_id, :lock_version,
-                                               question_option_ids: [])
+    permitted = params.require(:answer)
+                      .permit(:id, :text, :plan_id, :user_id, :question_id,
+                              :lock_version, :standards, question_option_ids: [])
     # If question_option_ids has been filtered out because it was a
     # scalar value (e.g. radiobutton answer)
     if !params[:answer][:question_option_ids].nil? &&
