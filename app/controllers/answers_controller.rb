@@ -5,8 +5,11 @@ class AnswersController < ApplicationController
   respond_to :html
 
   # POST /answers/create_or_update
-  # TODO: Why!? This method is overly complex. Needs a refactor and we should break
-  #       apart into separate create/update actions
+  # TODO: Why!? This method is overly complex. Needs a serious refactor!
+  #       We should break apart into separate create/update actions to simplify
+  #       logic and we should stop using custom JSON here and instead use
+  #       `remote: true` in the <form> tag and just send back the ERB.
+  #       Conssider using ActionCable for the progress bar(s)
   def create_or_update
     p_params = permitted_params()
 
@@ -39,38 +42,44 @@ class AnswersController < ApplicationController
     # rubocop:disable Metrics/BlockLength
     Answer.transaction do
       begin
+        args = p_params
+        # Answer model does not understand :standards so remove it from the params
+        standards = args[:standards]
+        args.delete(:standards)
+
         @answer = Answer.find_by!(
-          plan_id: p_params[:plan_id],
-          question_id: p_params[:question_id]
+          plan_id: args[:plan_id],
+          question_id: args[:question_id]
         )
         authorize @answer
-        @answer.update(p_params.merge(user_id: current_user.id))
-        if p_params[:question_option_ids].present?
+
+        @answer.update(args.merge(user_id: current_user.id))
+        if args[:question_option_ids].present?
           # Saves the record with the updated_at set to the current time.
           # Needed if only answer.question_options is updated
           @answer.touch()
         end
         if q.question_format.rda_metadata?
           @answer.update_answer_hash(
-            JSON.parse(p_params[:standards]), p_params[:text]
+            JSON.parse(standards.to_json), args[:text]
           )
           @answer.save!
         end
       rescue ActiveRecord::RecordNotFound
-        @answer = Answer.new(p_params.merge(user_id: current_user.id))
+        @answer = Answer.new(args.merge(user_id: current_user.id))
         @answer.lock_version = 1
         authorize @answer
         if q.question_format.rda_metadata?
           @answer.update_answer_hash(
-            JSON.parse(p_params[:standards]), p_params[:text]
+            JSON.parse(standards.to_json), args[:text]
           )
         end
         @answer.save!
       rescue ActiveRecord::StaleObjectError
         @stale_answer = @answer
         @answer = Answer.find_by(
-          plan_id: p_params[:plan_id],
-          question_id: p_params[:question_id]
+          plan_id: args[:plan_id],
+          question_id: args[:question_id]
         )
       end
     end
@@ -140,7 +149,7 @@ class AnswersController < ApplicationController
   def permitted_params
     permitted = params.require(:answer)
                       .permit(:id, :text, :plan_id, :user_id, :question_id,
-                              :lock_version, :standards, question_option_ids: [])
+                              :lock_version, question_option_ids: [], standards: {})
     # If question_option_ids has been filtered out because it was a
     # scalar value (e.g. radiobutton answer)
     if !params[:answer][:question_option_ids].nil? &&
